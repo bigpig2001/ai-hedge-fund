@@ -3,7 +3,7 @@ from src.graph.state import AgentState, show_agent_reasoning
 from src.utils.progress import progress
 import json
 
-from src.tools.api import get_financial_metrics
+from src.tools.api import get_financial_metrics, get_financial_metrics_akshare
 
 
 ##### Fundamental Agent #####
@@ -19,20 +19,39 @@ def fundamentals_agent(state: AgentState):
     for ticker in tickers:
         progress.update_status("fundamentals_agent", ticker, "Fetching financial metrics")
 
-        # Get the financial metrics
-        financial_metrics = get_financial_metrics(
-            ticker=ticker,
-            end_date=end_date,
-            period="ttm",
-            limit=10,
-        )
+        # Get the financial metrics based on ticker type (Chinese stock or other)
+        # AKShare integration: Use get_financial_metrics_akshare for Chinese stocks
+        if ticker.upper().endswith((".SS", ".SZ")):
+            progress.update_status("fundamentals_agent", ticker, "Fetching financial metrics using akshare")
+            financial_metrics_list = get_financial_metrics_akshare(
+                ticker=ticker, # akshare expects ticker like 'sh600000' or 'sz000001'.
+                               # The calling function should ensure correct format.
+                               # For now, we assume it's passed correctly.
+                end_date=end_date, # end_date might not be directly used by akshare for some metrics,
+                                   # as it often provides the latest.
+            )
+        else:
+            progress.update_status("fundamentals_agent", ticker, "Fetching financial metrics using default API")
+            financial_metrics_list = get_financial_metrics(
+                ticker=ticker,
+                end_date=end_date,
+                period="ttm",
+                limit=10, # Default API might return multiple periods
+            )
 
-        if not financial_metrics:
+        if not financial_metrics_list:
             progress.update_status("fundamentals_agent", ticker, "Failed: No financial metrics found")
+            fundamental_analysis[ticker] = { # Provide a default neutral signal
+                "signal": "neutral",
+                "confidence": 0,
+                "reasoning": {"error": "No financial metrics found"},
+            }
             continue
 
         # Pull the most recent financial metrics
-        metrics = financial_metrics[0]
+        # Both functions are expected to return a list of FinancialMetrics objects.
+        # We take the first one, assuming it's the most relevant/recent.
+        metrics = financial_metrics_list[0]
 
         # Initialize signals list for different fundamental aspects
         signals = []

@@ -1,6 +1,10 @@
 # AI Hedge Fund
 
-This is a proof of concept for an AI-powered hedge fund.  The goal of this project is to explore the use of AI to make trading decisions.  This project is for **educational** purposes only and is not intended for real trading or investment.
+This is a proof of concept for an AI-powered hedge fund.  The goal of this project is to explore the use of AI to make trading decisions, utilizing various data sources and advanced AI models. This project is for **educational** purposes only and is not intended for real trading or investment.
+
+**Data Sources:** The system primarily uses financial data from [Financial Datasets API](https://financialdatasets.ai/). Additionally, it now supports fetching data for **Chinese A-shares using `akshare`**, broadening its analytical scope to the Chinese market.
+
+**AI Capabilities:** The project leverages Large Language Models (LLMs) from providers like OpenAI, Groq, Anthropic, and DeepSeek. It now also integrates **Google's Gemini API** for sophisticated AI-driven analysis, including news sentiment evaluation.
 
 This system employs several agents working together:
 
@@ -15,11 +19,12 @@ This system employs several agents working together:
 9. Stanley Druckenmiller Agent - Macro legend who hunts for asymmetric opportunities with growth potential
 10. Warren Buffett Agent - The oracle of Omaha, seeks wonderful companies at a fair price
 11. Valuation Agent - Calculates the intrinsic value of a stock and generates trading signals
-12. Sentiment Agent - Analyzes market sentiment and generates trading signals
-13. Fundamentals Agent - Analyzes fundamental data and generates trading signals
-14. Technicals Agent - Analyzes technical indicators and generates trading signals
-15. Risk Manager - Calculates risk metrics and sets position limits
-16. Portfolio Manager - Makes final trading decisions and generates orders
+12. **Fundamentals Agent** - Analyzes fundamental data (including for Chinese A-shares via `akshare`) and generates trading signals.
+13. **News Sentiment Agent** - Analyzes news headlines using the Gemini API to determine market sentiment (positive, negative, neutral) for specific tickers.
+14. Sentiment Agent (Legacy/Other) - Analyzes general market sentiment and generates trading signals.
+15. Technicals Agent - Analyzes technical indicators and generates trading signals.
+16. Risk Manager - Calculates risk metrics and sets position limits.
+17. Portfolio Manager - Makes final trading decisions and generates orders.
     
 <img width="1042" alt="Screenshot 2025-03-22 at 6 19 07 PM" src="https://github.com/user-attachments/assets/cbae3dcf-b571-490d-b0ad-3f0f035ac0d4" />
 
@@ -91,7 +96,15 @@ GROQ_API_KEY=your-groq-api-key
 # For getting financial data to power the hedge fund
 # Get your Financial Datasets API key from https://financialdatasets.ai/
 FINANCIAL_DATASETS_API_KEY=your-financial-datasets-api-key
+
+# For using Google's Gemini API for tasks like news sentiment analysis
+# Get your Google API key from https://console.cloud.google.com/ (ensure Generative AI / Vertex AI APIs are enabled)
+GOOGLE_API_KEY=your-google-api-key
 ```
+**Note on Data Sources:**
+*   Financial data for major US tickers like AAPL, GOOGL, MSFT, NVDA, and TSLA is often available free of charge via the default API and does not require `FINANCIAL_DATASETS_API_KEY`.
+*   For other US tickers and international (non-Chinese) stocks, `FINANCIAL_DATASETS_API_KEY` is generally required.
+*   For Chinese A-shares (e.g., `600519.SS`, `000001.SZ`), data is fetched using `akshare`, which does not require an API key but relies on publicly available data.
 
 ### Using Docker
 
@@ -122,9 +135,10 @@ run.bat build
 
 **Important**: You must set `OPENAI_API_KEY`, `GROQ_API_KEY`, `ANTHROPIC_API_KEY`, or `DEEPSEEK_API_KEY` for the hedge fund to work.  If you want to use LLMs from all providers, you will need to set all API keys.
 
-Financial data for AAPL, GOOGL, MSFT, NVDA, and TSLA is free and does not require an API key.
+Financial data for AAPL, GOOGL, MSFT, NVDA, and TSLA is free and does not require an API key (uses default provider).
 
-For any other ticker, you will need to set the `FINANCIAL_DATASETS_API_KEY` in the .env file.
+For any other ticker (excluding Chinese A-shares covered by `akshare`), you will need to set the `FINANCIAL_DATASETS_API_KEY` in the .env file.
+Chinese A-share data is fetched via `akshare` and does not require this key.
 
 ## Usage
 
@@ -241,7 +255,9 @@ ai-hedge-fund/
 │   │   ├── fundamentals.py       # Fundamental analysis agent
 │   │   ├── portfolio_manager.py  # Portfolio management agent
 │   │   ├── risk_manager.py       # Risk management agent
-│   │   ├── sentiment.py          # Sentiment analysis agent
+│   │   ├── fundamentals.py       # Fundamental analysis agent (handles US and Chinese stocks)
+│   │   ├── news_sentiment_agent.py # News sentiment analysis using Gemini API
+│   │   ├── sentiment.py          # Legacy sentiment analysis agent
 │   │   ├── technicals.py         # Technical analysis agent
 │   │   ├── valuation.py          # Valuation analysis agent
 │   │   ├── ...                   # Other agents
